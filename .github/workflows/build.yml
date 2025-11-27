@@ -35,7 +35,8 @@ jobs:
       
           python3 -m venv venv
           . venv/bin/activate
-      
+
+          sed -i 's/clang-format>=1.13x/clang-format>=1.13/' zephyr/scripts/requirements-extras.txt
           pip install --upgrade pip
           pip install -U fonttools
       
