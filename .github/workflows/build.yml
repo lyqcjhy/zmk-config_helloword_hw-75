@@ -34,12 +34,13 @@ jobs:
           apt-get install -y nodejs
       
           python3 -m venv venv
-          source venv/bin/activate
+          . venv/bin/activate
       
           pip install --upgrade pip
           pip install -U fonttools
       
           npm install -g lv_font_conv
+
 
 
       - name: Cache west modules
