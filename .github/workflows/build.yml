@@ -14,9 +14,9 @@ jobs:
       matrix:
         include:
           - { board: hw75_keyboard@1.1, keymap: hw75_keyboard.keymap  }
-          - { board: hw75_keyboard@1.2, keymap: hw75_keyboard.keymap  }
+          # - { board: hw75_keyboard@1.2, keymap: hw75_keyboard.keymap  }
           - { board: hw75_dynamic@A,    keymap: hw75_dynamic.keymap   }
-          - { board: hw75_dynamic@B,    keymap: hw75_dynamic.keymap   }
+          # - { board: hw75_dynamic@B,    keymap: hw75_dynamic.keymap   }
 
     steps:
       - name: Prepare variables
@@ -29,20 +29,14 @@ jobs:
       - name: Set up build tools
         run: |
           apt-get update
-          apt-get install -y python3-venv protobuf-compiler curl
-          curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-          apt-get install -y nodejs
-      
+          apt-get install -y nodejs python3-venv
           python3 -m venv venv
           . venv/bin/activate
-
-          sed -i 's/clang-format>=1.13x/clang-format>=1.13/' zephyr/scripts/requirements-extras.txt
-          pip install --upgrade pip
+          apt-get install -y python3-pip protobuf-compiler curl
+          curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+          apt-get install -y nodejs
           pip install -U fonttools
-      
           npm install -g lv_font_conv
-
-
 
       - name: Cache west modules
         uses: actions/cache@v4
@@ -62,14 +56,18 @@ jobs:
 
       - name: Prepare west
         run: |
+          . venv/bin/activate
           west init -l config
           west update
           west zephyr-export
-          ./venv/bin/pip install -r zephyr/scripts/requirements.txt
+          pip install -r zephyr/scripts/requirements.txt
+          pip install protobuf==3.20.1  # 指定 protobuf 版本
+          pip install nanopb==0.4.6  # 安装指定版本的 nanopb
           git config --global --add safe.directory $PWD
 
       - name: West build
         run: |
+          . venv/bin/activate
           west build -s zmk/app -b ${{ matrix.board }} -- \
             -DZMK_CONFIG=${GITHUB_WORKSPACE}/config \
             -DKEYMAP_FILE=${GITHUB_WORKSPACE}/config/${{ matrix.keymap }}
@@ -90,7 +88,7 @@ jobs:
       - name: Archive
         uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: firmware-${{ matrix.board }}
           path: build/artifacts
 
   release:
@@ -118,7 +116,7 @@ jobs:
           echo "$EOF" >> $GITHUB_OUTPUT
 
       - name: Publish release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@v4
         with:
           file: firmware/*
           file_glob: true
